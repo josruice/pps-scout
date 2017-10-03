@@ -1,9 +1,9 @@
-n=15
-s=10
+n=20
+s=5
 e=20
 t=200
 repeats=1
-p=random
+p=g5
 m=sparse_landmarks
 em=random_enemymap
 fps=5
