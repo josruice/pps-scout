@@ -13,6 +13,7 @@ public class Player extends scout.sim.Player {
     int t,n;
     int x = -1;
     int y = -1;
+    int dx = 0, dy = 0;
     int seed;
 
     /**
@@ -43,6 +44,7 @@ public class Player extends scout.sim.Player {
     @Override
     public Point move(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
         //System.out.println("I'm at " + x + " " + y);
+        System.out.println("move");
         for(int i = 0 ; i < 3; ++ i) {
             for(int j = 0 ; j < 3 ; ++ j) {
                 boolean safe = true;
@@ -93,20 +95,23 @@ public class Player extends scout.sim.Player {
             //move to outpost with least x and y coordinate
             if (nearbyIds.get(0).get(0) != null) {
                 //move up and left
-                x -= 1;
-                y -= 1;
+                dx = -1;
+                dy = -1;
                 return new Point(-1, -1);
             }
             if (nearbyIds.get(0).get(1) != null) {
                 //move down x
-                x -= 1;
+                dx = -1;
+                dy = 0;
                 return new Point(-1, 0);
             }
             if (nearbyIds.get(1).get(0) != null) {
                 //move down y
-                y -= 1;
+                dy = -1;
+                dx = 0;
                 return new Point(0, -1);
             }
+            dx = dy = 0;
             return new Point(0, 0);
         }
 
@@ -121,5 +126,13 @@ public class Player extends scout.sim.Player {
     @Override
     public void communicate(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
         --t;
+        System.out.println("communicate");
+    }
+
+    @Override
+    public void moveFinished() {
+        x += dx;
+        y += dy;
+        dx = dy = 0;
     }
 }

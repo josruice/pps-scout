@@ -13,6 +13,7 @@ public class Player extends scout.sim.Player {
     int t,n;
     int x = -1;
     int y = -1;
+    int dx = 0, dy = 0;
     int seed;
     int id;
 
@@ -137,13 +138,13 @@ public class Player extends scout.sim.Player {
     }
 
     private void setX(int move) {
-        if (x != -1)
-            x += move;
+        if (dx != -1)
+            dx = move;
     }
 
     private void setY(int move) {
-        if (y != -1)
-            y += move;
+        if (dy != -1)
+            dy = move;
     }
 
     public void stub() {
@@ -153,5 +154,13 @@ public class Player extends scout.sim.Player {
     @Override
     public void communicate(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
         --t;
+        System.out.println("communicate");
+    }
+
+    @Override
+    public void moveFinished() {
+        x += dx;
+        y += dy;
+        dx = dy = 0;
     }
 }

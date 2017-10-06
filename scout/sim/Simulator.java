@@ -187,6 +187,7 @@ public class Simulator {
           int turns = turnsToWait.get(scout.getID());
           if(turns == 0) {
             grid.update(scout, nextLocation.get(scout.getID()));
+            scout.moveFinished();
             //turnsToWait.put(scout.getID(), turns);
           } else if(turns > 0 ){
             //turnsToWait.put(scout.getID(), turns);

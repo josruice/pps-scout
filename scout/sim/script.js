@@ -39,6 +39,10 @@ function rand(n) {
     return Math.floor((Math.random() * n));
 }
 
+Number.prototype.hashCode = function(){
+    return (this*2654435761) % 4294967296;
+}
+
 function draw_dots(min_x, min_y, max_x, max_y, rows, cols, num, xcoords, ycoords, color, IDs, isenemy) {
     var ctx = document.getElementById('canvas').getContext('2d');
     for(var i = 0 ; i < num ; ++ i) {
@@ -48,10 +52,11 @@ function draw_dots(min_x, min_y, max_x, max_y, rows, cols, num, xcoords, ycoords
         var locationx = min_x + xcoords[i] * (max_x - min_x) / cols + (max_x - min_x) / (4*cols);
         var locationy = min_y + ycoords[i] * (max_y - min_y) / rows+ (max_y - min_y) / (4*rows);
         if(!isenemy) {
-            locationx +=  rand((max_x - min_x) / (2*cols));
-            locationy +=  rand((max_y - min_y) / (2*rows))
+            locationx +=  IDs[i].hashCode()%((max_x - min_x) / (2*cols));
+            locationy +=  IDs[i].hashCode()%((max_y - min_y) / (2*rows))
         }
-        var radius = 3;
+        var radius = 4;
+        if(rows > 25) radius = 3;
         if(rows > 50) radius = 2;
         ctx.arc(
             locationx, 
@@ -60,7 +65,7 @@ function draw_dots(min_x, min_y, max_x, max_y, rows, cols, num, xcoords, ycoords
         ctx.fillStyle = color;
         ctx.fill();
         if(IDs != null) {
-            ctx.font = "10px Arial";
+            ctx.font = "14px Arial";
             ctx.textAlign = "left";
             ctx.lineWidth = 1;
             ctx.strokeStyle = "black";

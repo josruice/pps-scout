@@ -58,4 +58,9 @@ abstract public class Player extends CellObject {
             List<CellObject> concurrentObjects
     );
 
+
+    /**
+    * Called when the actual move finishes. Update your player's x and y here!
+    */
+    public abstract void moveFinished();
 }
