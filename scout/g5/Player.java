@@ -1,21 +1,241 @@
 package scout.g5;
 
 import scout.sim.*;
-
 import java.util.*;
 
+//-----------------------------------------------------------------------------
+// Player's State Machine
+//-----------------------------------------------------------------------------
+
+// Default state behaviour.
+abstract class State {
+    public Point move(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
+        System.err.println("move() method has to be overriden.");
+        return null;
+    }
+}
+
+class OrientingState extends State {
+    public Point move(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
+        return null;
+    }
+}
+
+class ExploringState extends State {
+    public Point move(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
+        return null;
+    }
+}
+
+class GoingBackToOutposState extends State {
+    public Point move(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
+        return null;
+    }
+}
+
+class DoneState extends State {
+    public Point move(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
+        // TODO: implement don't move.
+        return null;
+    }
+}
+
+// Communication states. TODO: implement
+class CommunicatingState extends State {};
+class MovingToMeetingPointState extends State {};
+class WaitingForOtherPlayerState extends State {};
+class EndingCommunicationState extends State {};
+
+// Although in CS theory they are referred as symbols, events name suits better our current scenario.
+abstract class Event {
+    final int priority = 0;
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                               List<CellObject> concurrentObjects) {
+        System.err.println("isHappening() method has to be overriden.");
+        return false;
+    }
+
+    // This method is required since attributes are not overriden in subclasses.
+    public int getPriority() {
+        System.err.println("getPriority() method has to be overriden.");
+        return this.priority;
+    }
+};
+
+// Null object pattern.
+class NoEvent extends Event {
+    final int priority = 0;
+    @Override
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                               List<CellObject> concurrentObjects) {
+        return true;
+    }
+};
+
+class PlayerSightedEvent extends Event {
+    final int priority = 5;
+    @Override
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                               List<CellObject> concurrentObjects) {
+        return false;
+    }
+};
+
+class OrientedEvent extends Event {
+    final int priority = 3;
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                               List<CellObject> concurrentObjects) {
+        return false;
+    }
+};
+
+class NotOrientedEvent extends Event {
+    final int priority = 1;
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                               List<CellObject> concurrentObjects) {
+        return false;
+    }
+};
+
+// This event will trigger when the amounts of turns remaining is roughly the required to get to the closest outpost.
+class EndOfMissionEvent extends Event {
+    final int priority = 1000;
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                               List<CellObject> concurrentObjects) {
+//        int timeToOutpost = n*n; // Initialize to unreasonably high number.
+//        if (oriented) {
+//
+//        } else {
+//
+//        }
+//
+//        int extraTimeToOutpost = (int) (timeToOutpost*1.1);
+//        int endOfMissionTime = timeToOutpost + extraTimeToOutpost;
+//        boolean isEndOfMission = remainingTurns < endOfMissionTime;
+//        if (isEndOfMission) {
+//            this.currentState = States.END_OF_MISSION;
+//        }
+        return false;
+    }
+};
+
+class OutpostReachedEvent extends Event {
+    final int priority = 10;
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                               List<CellObject> concurrentObjects) {
+        return false;
+    }
+};
+
+// Communication events. TODO: implement
+class NotInMeetingPointEvent            extends Event {};
+class MeetingPointReached               extends Event {};
+class OtherPlayerNotInMeetingPointEvent extends Event {};
+class OtherPlayerInMeetingPointEvent    extends Event {};
+class CommunicationCompletedEvent       extends Event {};
+class CommunicationTimeoutEvent         extends Event {};
+
+// Player's Finite State Machine
+class PlayerFSM {
+
+    private State orientingState = new OrientingState();
+    private State exploringState = new ExploringState();
+    private State goingBackToOutposState = new GoingBackToOutposState();
+    private State doneState = new DoneState();
+
+    private State[] states = {orientingState, exploringState, goingBackToOutposState, doneState};
+
+
+    private Event playerSightedEvent = new PlayerSightedEvent();
+    private Event orientedEvent = new OrientedEvent();
+    private Event notOrientedEvent = new NotOrientedEvent();
+    private Event endOfMissionEvent = new EndOfMissionEvent();
+    private Event outpostReachedEvent = new OutpostReachedEvent();
+
+    private Event[] events = {playerSightedEvent, orientedEvent, notOrientedEvent, endOfMissionEvent, outpostReachedEvent};
+
+    /*
+     * This represents the transitions table of the FSM. It use a State class and an Event class, and returns the new State.
+     *
+     * At implementation level, this is basically a hash with:
+     *  - Key: A class that inherits from State (from example, OrientingState)
+     *  - Value: Another hash with:
+     *     - Key: A class that inherits from Event (from example, PlayerSightedEvent)
+     *     - Value: A State object (from example, communicatingState)
+     *
+     * This can be interpreted as: a Player in OrientingState, that spots another player nearby (PlayerSightedEvent)
+     * will move to communicatingState, where it will be supposed to exchange information with him.
+     */
+    private Map<Class<? extends State>, Map<Class<? extends Event>, State>> transitions;
+    protected State currentState;
+
+    public PlayerFSM() {
+        currentState = orientingState;
+
+        transitions = new HashMap<Class<? extends State>, Map<Class<? extends Event>, State>>();
+
+        Map<Class<? extends Event>, State> orientingTransitions;
+        orientingTransitions = new HashMap<Class<? extends Event>, State>();
+        orientingTransitions.put(OrientedEvent.class, exploringState);
+        orientingTransitions.put(EndOfMissionEvent.class, goingBackToOutposState);
+        transitions.put(OrientingState.class, orientingTransitions);
+
+        Map<Class<? extends Event>, State> exploringTransitions;
+        exploringTransitions = new HashMap<Class<? extends Event>, State>();
+        exploringTransitions.put(EndOfMissionEvent.class, goingBackToOutposState);
+        transitions.put(ExploringState.class, exploringTransitions);
+
+        Map<Class<? extends Event>, State> goingBackToOutpostTransitions;
+        goingBackToOutpostTransitions = new HashMap<Class<? extends Event>, State>();
+        goingBackToOutpostTransitions.put(OutpostReachedEvent.class, doneState);
+        transitions.put(GoingBackToOutposState.class, goingBackToOutpostTransitions);
+    }
+
+    public Point move(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                     List<CellObject> concurrentObjects) {
+        this.updateState(player, nearbyIds, concurrentObjects);
+        return currentState.move(nearbyIds, concurrentObjects);
+    }
+
+    private void updateState(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                     List<CellObject> concurrentObjects) {
+        Event highestPriorityEvent = getHighestPriorityEvent(player, nearbyIds, concurrentObjects);
+
+        Map<Class<? extends Event>, State> currentStateTransitions = transitions.get(currentState.getClass());
+        if (currentStateTransitions.containsKey(highestPriorityEvent.getClass())) {
+            this.currentState = currentStateTransitions.get(highestPriorityEvent.getClass());
+        }
+    }
+
+    private Event getHighestPriorityEvent(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                                          List<CellObject> concurrentObjects) {
+        Event highestPriorityEvent = new NoEvent();
+        for (Event event : events) {
+            if (event.isHappening(player, nearbyIds, concurrentObjects)) {
+                if (event.priority > highestPriorityEvent.getPriority()) {
+                    highestPriorityEvent = event;
+                }
+            }
+        }
+        return highestPriorityEvent;
+    }
+}
 
 //Read scout.sim.Player for more information!
 public class Player extends scout.sim.Player {
+
     List<Point> enemyLocations;
     List<Point> safeLocations;
     Random gen;
-    int t,n;
-    int x = -1;
-    int y = -1;
+    int totalTurns;
+    int remainingTurns;
+    int n;
+    int x = -1, y = -1;
     int dx = 0, dy = 0;
     int seed;
     int id;
+    PlayerFSM fsm;
+    boolean oriented;  // Determines if the player knows his locations or not.
 
     /**
      * better to use init instead of constructor, don't modify ID or simulator will error
@@ -24,6 +244,7 @@ public class Player extends scout.sim.Player {
         super(id);
         seed=id;
         this.id = id;
+        this.fsm = new PlayerFSM();
     }
 
     /**
@@ -34,7 +255,8 @@ public class Player extends scout.sim.Player {
         enemyLocations = new ArrayList<>();
         safeLocations = new ArrayList<>();
         gen = new Random(seed);
-        this.t = t;
+        this.totalTurns = t;
+        this.remainingTurns = t;
         this.n = n;
     }
 
@@ -45,6 +267,9 @@ public class Player extends scout.sim.Player {
      */
     @Override
     public Point move(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
+        this.fsm.move(this, nearbyIds, concurrentObjects);
+
+
         //System.out.println("I'm at " + x + " " + y);
         for(int i = 0 ; i < 3; ++ i) {
             for(int j = 0 ; j < 3 ; ++ j) {
@@ -138,12 +363,12 @@ public class Player extends scout.sim.Player {
     }
 
     private void setX(int move) {
-        if (dx != -1)
+        if (x != -1)
             dx = move;
     }
 
     private void setY(int move) {
-        if (dy != -1)
+        if (y != -1)
             dy = move;
     }
 
@@ -153,7 +378,7 @@ public class Player extends scout.sim.Player {
 
     @Override
     public void communicate(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
-        --t;
+        --remainingTurns;
         System.out.println("communicate");
     }
 
