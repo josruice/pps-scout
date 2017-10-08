@@ -16,7 +16,14 @@ public class Player extends scout.sim.Player {
     int dx = 0, dy = 0;
     int seed;
     int id;
-
+    
+    int state = -1;
+    int waitTurns = 5;  
+    Point upperLeft = null;
+    Point upperRight = null;
+    Point lowerLeft = null;
+    Point lowerRight = null;
+    
     /**
      * better to use init instead of constructor, don't modify ID or simulator will error
      */
@@ -36,6 +43,11 @@ public class Player extends scout.sim.Player {
         gen = new Random(seed);
         this.t = t;
         this.n = n;
+        this.upperLeft = new Point(n/4 + 1, n/4 + 1);
+        this.upperRight = new Point(n/4 + 1, n/4 + n/2 + 1);
+        this.lowerRight = new Point(n/4 + n/2 + 1, n/4 + n/2 + 1);
+        this.lowerLeft = new Point(n/4 + n/2 + 1, n/4 + 1);
+                  
     }
 
     /**
@@ -45,7 +57,7 @@ public class Player extends scout.sim.Player {
      */
     @Override
     public Point move(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
-        //System.out.println("I'm at " + x + " " + y);
+        //System.out.println("I'm " + id + " and I'm at " + x + " " + y);
         for(int i = 0 ; i < 3; ++ i) {
             for(int j = 0 ; j < 3 ; ++ j) {
                 boolean safe = true;
@@ -73,13 +85,20 @@ public class Player extends scout.sim.Player {
         for(CellObject obj : concurrentObjects) {
             if (obj instanceof Player) {
                 //communicate using custom methods?
-                ((Player) obj).stub();
+                //((Player) obj).stub();                
+                if(((Player) obj).getID() != getID())   {
+                    stub((Player) obj); 
+                }               
+                               
             } else if (obj instanceof Enemy) {
 
             } else if (obj instanceof Landmark) {
                 x = ((Landmark) obj).getLocation().x;
                 y = ((Landmark) obj).getLocation().y;
             } else if (obj instanceof Outpost) {
+                x = ((Outpost) obj).getLocation().x;
+                y = ((Outpost) obj).getLocation().y;
+                
                 Object data = ((Outpost) obj).getData();
                 if(data == null) {
                     ((Outpost) obj).setData((Object)"yay!!");
@@ -92,16 +111,42 @@ public class Player extends scout.sim.Player {
                 }
             }
         }
+        
+        Point nextPoint = null;
+        
+        if(id == 4 && x != -1)  {
+            nextPoint = messengerMove();            
+        }      
+        else {
+            nextPoint = moveToOutpost(nearbyIds);   
+        }
+        
 
+        // System.out.println("id: " + id + " movex: " + moveX + " movey: " + moveY);
+        return nextPoint;
+    }
 
+    private void setX(int move) {
+        if (x != -1)
+            dx = move;
+    }
+
+    private void setY(int move) {
+        if (y != -1)
+            dy = move;
+    }
+
+    private Point moveToOutpost(ArrayList<ArrayList<ArrayList<String>>> nearbyIds)    {
+        
         int moveX = 0, moveY = 0;
-
-        if (id % 4 == 0 || id % 4 == 1) {
+        int numPlayerStrategies = 4;
+        
+        if (id % numPlayerStrategies == 0 || id % numPlayerStrategies == 1) {
             if (nearbyIds.get(0).get(1) != null) {
                 moveX = -1;
                 setX(moveX);
             }
-            if (id % 4 == 0) {
+            if (id % numPlayerStrategies == 0) {
                 if (nearbyIds.get(1).get(0) != null) {
                     moveY = -1;
                     setY(moveY);
@@ -119,7 +164,7 @@ public class Player extends scout.sim.Player {
                 moveX = 1;
                 setX(moveX);
             }
-            if (id % 4 == 2) {
+            if (id % numPlayerStrategies == 2) {
                 if (nearbyIds.get(1).get(0) != null) {
                     moveY = -1;
                     setY(moveY);
@@ -132,29 +177,113 @@ public class Player extends scout.sim.Player {
                 }
             }
         }
-
-        // System.out.println("id: " + id + " movex: " + moveX + " movey: " + moveY);
+        
         return new Point(moveX, moveY);
     }
 
-    private void setX(int move) {
-        if (dx != -1)
-            dx = move;
+    private Point messengerMove()   {
+        
+            
+        Point nextPoint = new Point(0, 0);              
+        
+        if(state == -1) {  
+            if(x == upperLeft.x && y == upperLeft.y) {                          
+                waitTurns--;
+                if(waitTurns == 0)  {
+                    state = 0;
+                    waitTurns = 5;
+                }                   
+            } else {
+                nextPoint = goToPosition(upperLeft.x, upperLeft.y); 
+            }                                   
+        } else if(state == 0)   {                       
+            if(x == upperRight.x && y == upperRight.y) {                                                
+                waitTurns--;
+                if(waitTurns == 0)  {
+                    state = 1;
+                    waitTurns = 5;
+                }           
+            }   else {
+                nextPoint = goToPosition(upperRight.x, upperRight.y);   
+            }                       
+            
+        } else if(state == 1)   {
+            if(x == lowerRight.x && y == lowerRight.y) {                                
+                waitTurns--;
+                if(waitTurns == 0)  {
+                    state = 2;
+                    waitTurns = 5;
+                }           
+            } else  {
+                nextPoint = goToPosition(lowerRight.x, lowerRight.y);   
+            }           
+                        
+        } else if(state == 2)   {
+            if(x == lowerLeft.x && y == lowerLeft.y) {              
+                waitTurns--;
+                if(waitTurns == 0)  {
+                    state = -1;
+                    waitTurns = 5;
+                }           
+            } else  {
+                nextPoint = goToPosition(lowerLeft.x, lowerLeft.y); 
+            }                           
+        } 
+        
+        
+        return nextPoint;
     }
 
-    private void setY(int move) {
-        if (dy != -1)
-            dy = move;
+    private Point goToPosition(int xFinal, int yFinal)  {
+        
+        int moveX = 1;
+        int moveY = 1;
+        
+        if(xFinal > x) {
+            moveX = 1;
+        } else if(xFinal == x) {
+            moveX = 0;
+        } else {
+            moveX = -1;
+        }
+            
+        if(yFinal > y) {
+            moveY = 1;
+        } else if(yFinal == y) {
+            moveY = 0;
+        } else {
+            moveY = -1;
+        }
+        
+        setX(moveX);
+        setY(moveY);
+        return new Point(moveX, moveY);
+        
     }
-
-    public void stub() {
-        ;
+    
+    public void stub(Player player) {               
+        
+        HashSet<Point> unionLocations = new HashSet<Point>();
+        unionLocations.addAll(safeLocations);
+        unionLocations.addAll(player.safeLocations);
+        
+        player.safeLocations = new ArrayList<Point>(unionLocations);
+        safeLocations = new ArrayList<Point>(unionLocations);
+        
+        
+        HashSet<Point> unionEnemies = new HashSet<Point>();
+        unionEnemies.addAll(enemyLocations);
+        unionEnemies.addAll(player.enemyLocations);
+                
+        player.enemyLocations = new ArrayList<Point>(enemyLocations);
+        enemyLocations = new ArrayList<Point>(enemyLocations);
+                
     }
 
     @Override
     public void communicate(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
         --t;
-        System.out.println("communicate");
+        //System.out.println("communicate");
     }
 
     @Override
