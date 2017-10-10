@@ -143,9 +143,11 @@ public class Simulator {
     for(Player scout : scouts) {
       turnsToWait.put(scout.getID(), -1);
     }
+    Map<String, CellObject> copies = new HashMap<>();
     while(t > 0) {
       if(t%100 == 1)
       if (log) System.out.println("turns left: " + t);
+      copies.clear();
 
       boolean[] communicated = new boolean[s];
       for(Player scout : scouts) {
@@ -175,7 +177,17 @@ public class Simulator {
           try {
             timer.call(new Callable<Void>() {
               public Void call() throws Exception {
-                scout.communicate(nearbyIDs, grid.getCell(currentLocation));
+                
+                scout.communicate(
+                  nearbyIDs,
+                  copyWithClonedPlayers(
+                    grid.getCell(
+                      currentLocation
+                    ),
+                    scout,
+                    copies
+                  )
+                );
                 return null;
               }
             }, play_timeout);
@@ -240,7 +252,16 @@ public class Simulator {
             try {
               direction = timer.call(new Callable<Point>() {
                 public Point call() throws Exception {
-                  return scout.move(nearbyIDs, grid.getCell(currentLocation));
+                  return scout.move(
+                    nearbyIDs, 
+                    copyWithClonedPlayers(
+                      grid.getCell(
+                        currentLocation
+                      ),
+                      scout,
+                      copies
+                    )
+                  );
                 }
               }, play_timeout);
             } catch (Exception ex) {
@@ -296,7 +317,8 @@ public class Simulator {
             scoutLocations,
             enemyLocations,
             landmarkLocations,
-            gui_refresh
+            gui_refresh,
+            0
           )
         );
     }
@@ -448,8 +470,49 @@ public class Simulator {
       }
       System.out.println("Enemies missed: " + enemies_missed);
     }
+    List<Point> scoutLocations = new ArrayList<>();
+    for(Player scout: scouts) {
+      scoutLocations.add(grid.location.get(scout.getID()));
+    }
+    if(gui_enabled) {
+      gui(
+        server, 
+        state(
+          group, 
+          n, 
+          t, 
+          scouts,
+          scoutLocations,
+          enemyLocations,
+          landmarkLocations,
+          gui_refresh,
+          score
+        )
+      );
+      for(;;);
+    }
     if(server != null) server.close();
     return score;
+  }
+  private static List<CellObject> copyWithClonedPlayers (
+    List<CellObject> list,
+    Player scout,
+    Map<String, CellObject> copies
+  ) throws Exception {
+    if(true) return list;
+    for(int i = 0; i < list.size(); ++i) {
+      String id  = list.get(i).getID();
+      if(id.charAt(0)=='P' && id!=scout.getID()) {
+        if(copies.containsKey(id)) {
+          list.set( i, copies.get(id));
+        } else {
+          Player copy = (Player) ObjectCloner.deepCopy(list.get(i));
+          list.set(i, copy);
+          copies.put(id, copy);
+        }
+      }
+    }
+    return list;
   }
 
   private static void parseArgs(String[] args) {
@@ -655,7 +718,8 @@ public class Simulator {
     List<Point> scoutLocations,
     List<Point> enemyLocations,
     List<Point> landmarkLocations,
-    long gui_refresh) {
+    long gui_refresh,
+    int score) {
 
     String buffer = "";
     buffer += group + ",";
@@ -684,6 +748,7 @@ public class Simulator {
     for(Player scout : scouts) {
       buffer += scout.getID().substring(1) + ",";
     }
+    buffer += score;
     return buffer;
   }
 

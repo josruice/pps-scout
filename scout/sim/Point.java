@@ -1,6 +1,6 @@
 package scout.sim;
-
-public class Point {
+import java.io.Serializable;
+public class Point implements Serializable {
     public int x;
     public int y;
     public Point(int x, int y) {
