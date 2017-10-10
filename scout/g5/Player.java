@@ -60,6 +60,32 @@ class ExploringState extends State {
     public Point move(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
                       List<CellObject> concurrentObjects) {
 //        System.out.printf("My position is: %d, %d\n", player.x, player.y);
+        // TODO: move this enemy visualization logic somewhere else.
+        for(int i = 0 ; i < 3; ++ i) {
+            for(int j = 0 ; j < 3 ; ++ j) {
+                boolean safe = true;
+                if(nearbyIds.get(i).get(j) == null) continue;
+                for(String ID : nearbyIds.get(i).get(j)) {
+                    if(ID.charAt(0) == 'E') {
+                        safe = false;
+                    }
+                }
+
+                if(player.x != -1) {
+                    Point consideredLocation = new Point(player.x + i - 1, player.y + j - 1);
+                    if(safe) {
+                        if(!player.safeLocations.contains(consideredLocation)) {
+                            player.safeLocations.add(consideredLocation);
+                        }
+                    } else {
+                        if(!player.enemyLocations.contains(consideredLocation)) {
+                            player.enemyLocations.add(consideredLocation);
+                        }
+                    }
+                }
+            }
+        }
+
         if (communicatedWithMessenger) {
             // Explore some more till the end of the game.
             int x = (player.assignedOutpost.x == 0)? 1 : -1;
@@ -106,7 +132,19 @@ class DoneState extends State {
 }
 
 // Communication states. TODO: implement
-class CommunicatingState extends State {};
+class CommunicatingState extends State {
+    public Point move(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                      List<CellObject> concurrentObjects) {
+        for(CellObject obj : concurrentObjects) {
+            if (obj instanceof Player) {
+                if (((Player) obj).getID() != player.getID()) {
+                    player.stub((Player) obj);
+                }
+            }
+        }
+        return null;
+    }
+};
 class MovingToMeetingPointState extends State {};
 class WaitingForOtherPlayerState extends State {};
 class EndingCommunicationState extends State {};
@@ -230,6 +268,28 @@ class NotOrientedEvent extends Event {
     }
 };
 
+class CommunicatedEvent extends Event {
+    public int getPriority() { return 4; }
+
+    @Override
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                               List<CellObject> concurrentObjects) {
+        boolean communicated = false;
+        for(CellObject obj : concurrentObjects) {
+            if (obj instanceof Player) {
+                if (((Player) obj).getID() != player.getID()) {
+                    player.stub((Player) obj);
+                }
+                communicated = true;
+            }
+
+        }
+        return communicated;
+    }
+};
+
+
+
 // This event will trigger when the amounts of turns remaining is roughly the required to get to the closest outpost.
 class EndOfMissionEvent extends Event {
     public int getPriority() { return 1000; }
@@ -308,9 +368,10 @@ class PlayerFSM {
     private Event notOrientedEvent = new NotOrientedEvent();
     private Event endOfMissionEvent = new EndOfMissionEvent();
     private Event outpostReachedEvent = new OutpostReachedEvent();
+    private Event communicatedEvent = new CommunicatedEvent();
 
     private Event[] events = {playerSightedEvent, landmarkSightedEvent, orientedEvent, notOrientedEvent,
-            endOfMissionEvent, outpostReachedEvent};
+            endOfMissionEvent, outpostReachedEvent, communicatedEvent};
 
     /*
      * This represents the transitions table of the FSM. It use a State class and an Event class, and returns the new State.
@@ -691,16 +752,14 @@ public class Player extends scout.sim.Player {
         HashSet<Point> unionLocations = new HashSet<Point>();
         unionLocations.addAll(safeLocations);
         unionLocations.addAll(player.safeLocations);
-        
-        player.safeLocations = new ArrayList<Point>(unionLocations);
+
         safeLocations = new ArrayList<Point>(unionLocations);
         
         
         HashSet<Point> unionEnemies = new HashSet<Point>();
         unionEnemies.addAll(enemyLocations);
         unionEnemies.addAll(player.enemyLocations);
-                
-        player.enemyLocations = new ArrayList<Point>(enemyLocations);
+
         enemyLocations = new ArrayList<Point>(enemyLocations);
                 
     }
