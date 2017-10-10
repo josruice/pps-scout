@@ -616,12 +616,6 @@ public class Player extends scout.sim.Player {
             }
         }
 
-        if (x == -1) {
-            // Store the move made the get to this location along with neighbouring enemies
-            // and safe places.
-            unknownLocations.add(new Location(moveX, moveY, enemyLocs, safeLocs));
-        }
-        
         Point nextPoint = null;
 
         System.out.printf("Id: %d, x: %d, y: %d\n", id, x, y);
@@ -630,6 +624,12 @@ public class Player extends scout.sim.Player {
         }      
         else {
             nextPoint = moveToOutpost(nearbyIds);   
+        }
+
+        if (x == -1) {
+            // Store the move made the get to this location along with neighbouring enemies
+            // and safe places.
+            unknownLocations.add(new Location(moveX, moveY, enemyLocs, safeLocs));
         }
 
         // System.out.println("id: " + id + " movex: " + moveX + " movey: " + moveY);
@@ -647,9 +647,11 @@ public class Player extends scout.sim.Player {
     }
 
     private Point moveToOutpost(ArrayList<ArrayList<ArrayList<String>>> nearbyIds)    {
-        
-        int moveX = 0, moveY = 0;
+
         int numPlayerStrategies = 4;
+
+        moveX = 0;
+        moveY = 0;
         
         if (id % numPlayerStrategies == 0 || id % numPlayerStrategies == 1) {
             if (nearbyIds.get(0).get(1) != null) {
@@ -742,9 +744,6 @@ public class Player extends scout.sim.Player {
 
     Point goToPosition(int xFinal, int yFinal)  {
         
-        int moveX = 1;
-        int moveY = 1;
-        
         if(xFinal > x) {
             moveX = 1;
         } else if(xFinal == x) {
@@ -784,10 +783,10 @@ public class Player extends scout.sim.Player {
 
     // Iterate through the data stored till the player determined their current location.
     // Get data about previously unknown locations.
-    private void unravelData() {
+    void unravelData() {
         int prevX = x - moveX;
         int prevY = y - moveY;
-        for (int i = unknownLocations.size() - 1; i > 0; --i) {
+        for (int i = unknownLocations.size() - 1; i >= 0; --i) {
             Location loc = unknownLocations.get(i);
             System.out.println("Id: " + id + " pos: " + prevX + " " + prevY);
             for (Point p : loc.enemyLocations) {
@@ -799,6 +798,9 @@ public class Player extends scout.sim.Player {
             }
 
             for (Point p : loc.safeLocations) {
+                if (prevX + p.x < 0 || prevY + p.y < 0) {
+                    continue;
+                }
                 Point safe = new Point(prevX + p.x, prevY + p.y);
                 if (!safeLocations.contains(safe)) {
                     safeLocations.add(safe);
