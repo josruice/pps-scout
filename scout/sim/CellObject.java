@@ -1,6 +1,6 @@
 package scout.sim;
-
-public class CellObject {
+import java.io.Serializable;
+public class CellObject implements Serializable{
 	private final String id;
     public CellObject(String id) {
         this.id = id;

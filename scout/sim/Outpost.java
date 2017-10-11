@@ -34,7 +34,12 @@ public class Outpost extends CellObject {
     }
 
     public Object getData() {
-        return data;
+        try {
+            return ObjectCloner.deepCopy(data);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 
     public void addEnemyLocation(Point p) {
