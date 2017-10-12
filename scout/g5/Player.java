@@ -214,7 +214,7 @@ public class Player extends scout.sim.Player {
     }
 
     // Go to xFinal, yFinal.
-    public Point goToPosition(int xFinal, int yFinal) {
+    public Point goToPosition(int xFinal, int yFinal, ArrayList<ArrayList<ArrayList<String>>> nearbyIds) {
         int moveX = 1;
         int moveY = 1;
 
@@ -234,7 +234,33 @@ public class Player extends scout.sim.Player {
             moveY = -1;
         }
 
+        if (isEnemyAtGivenPoint(moveX+1, moveY+1, nearbyIds)) {
+            // If the player is moving diagonally.
+            if (moveX != 0 && moveY != 0) {
+                if (!isEnemyAtGivenPoint(moveX+1, 1, nearbyIds)) {
+                    moveY = 0;
+                }
+                else if (!isEnemyAtGivenPoint(1, moveY+1, nearbyIds)){
+                    moveX = 0;
+                }
+            }
+        }
+
         return new Point(moveX, moveY);
+    }
+
+    // Return true if there is an enemy at pointX, pointY.
+    private boolean isEnemyAtGivenPoint(int pointX, int pointY, ArrayList<ArrayList<ArrayList<String>>> nearbyIds) {
+        boolean enemy = false;
+
+        for(String ID : nearbyIds.get(pointX).get(pointY)) {
+            if(ID.charAt(0) == 'E') {
+                enemy = true;
+                break;
+            }
+        }
+
+        return enemy;
     }
 
     // Merge your data with that of the other player.
@@ -248,7 +274,7 @@ public class Player extends scout.sim.Player {
         HashSet<Point> unionEnemies = new HashSet<Point>();
         unionEnemies.addAll(enemyLocations);
         unionEnemies.addAll(p.enemyLocations);
-        enemyLocations = new ArrayList<Point>(enemyLocations);
+        enemyLocations = new ArrayList<Point>(unionEnemies);
     }
 
     // Store information from this position.
