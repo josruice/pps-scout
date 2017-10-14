@@ -234,6 +234,16 @@ public class Player extends scout.sim.Player {
             moveY = -1;
         }
 
+        // Say the player needs to reach xFinal, yFinal but there is an enemy at that location.
+        // The current below behaviour will force the player to move into the enemy spot.
+        // The behaviour may need to be tweaked further depending on what is needed.
+        if (this.x + moveX == xFinal && this.y + moveY == yFinal) {
+            return new Point(moveX, moveY);
+        }
+
+        // System.out.printf("To go: %d, moveX: %d, moveY: %d", this.id, xFinal, yFinal);
+        // System.out.printf("Before Id: %d, moveX: %d, moveY: %d", this.id, moveX, moveY);
+
         if (isEnemyAtGivenPoint(moveX+1, moveY+1, nearbyIds)) {
             // If the player is moving diagonally.
             if (moveX != 0 && moveY != 0) {
@@ -243,7 +253,7 @@ public class Player extends scout.sim.Player {
                 else if (!isEnemyAtGivenPoint(1, moveY+1, nearbyIds)){
                     moveX = 0;
                 }
-            } // The following code is resulting in the player oscillating between 2 diagonal squares.
+            }
             else if (moveX == 0 && moveY != 0) {
                 if (!isEnemyAtGivenPoint(2, moveY+1, nearbyIds)) {
                     moveX = 1;
@@ -261,6 +271,8 @@ public class Player extends scout.sim.Player {
                 }
             }
         }
+
+        // System.out.printf("After Id: %d, moveX: %d, moveY: %d", this.id, moveX, moveY);
 
         return new Point(moveX, moveY);
     }
