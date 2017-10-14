@@ -243,7 +243,23 @@ public class Player extends scout.sim.Player {
                 else if (!isEnemyAtGivenPoint(1, moveY+1, nearbyIds)){
                     moveX = 0;
                 }
+            }/* // The following code is resulting in the player oscillating between 2 diagonal squares.
+            else if (moveX == 0 && moveY != 0) {
+                if (!isEnemyAtGivenPoint(2, moveY+1, nearbyIds)) {
+                    moveX = 1;
+                }
+                else if (!isEnemyAtGivenPoint(0, moveY+1, nearbyIds)){
+                    moveX = -1;
+                }
             }
+            else if (moveX != 0 && moveY == 0) {
+                if (!isEnemyAtGivenPoint(moveX+1, 2, nearbyIds)) {
+                    moveY = 1;
+                }
+                else if (!isEnemyAtGivenPoint(moveX+1, 0, nearbyIds)){
+                    moveY = -1;
+                }
+            }*/
         }
 
         return new Point(moveX, moveY);
