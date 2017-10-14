@@ -44,14 +44,13 @@ public class Player extends scout.sim.Player {
     String yEdgeFound = null;
     int distanceFromEdge = -1;
 
-    // 
+    // Variables for exploring
     Point nextPointToReach = null;
     ArrayList<Point> pointsToReach = new ArrayList<Point>();       
-    int idx = 0;
-    Point upperLeftInBounds;
-    Point upperRightInBounds;
-    Point lowerRightInBounds;
-    Point lowerLeftInBounds;
+    int idx = 0;    
+    int stride = 5; 
+    int x_start, x_end, y_start, y_end = -1;
+    HashMap<Integer, Integer> idInitMapping = new HashMap<Integer, Integer>(); 
     
     public Player(int id) {
         super(id);
@@ -66,81 +65,82 @@ public class Player extends scout.sim.Player {
         this.totalTurns = t;
         this.remainingTurns = t;
         this.n = n;
-
+        int scoutsInQuadrant = s/4;
+        
         this.fsm = new PlayerFSM();
-
+ 
+        
         // Set coordinate boundaries and assigned outpost.
         switch(this.id % 4) {
             case 0:
+                // Upper left quadrant
+                // System.out.println("Upper left quadrant");
                 assignedOutpost = new Point(0,0);
                 upperLeft = new Point(0,0);
                 upperRight = new Point(0, n/2);
                 lowerRight = new Point(n/2, n/2);
                 lowerLeft = new Point(n/2, 0);
                 
-                upperLeftInBounds = new Point(1,1);
-                upperRightInBounds = new Point(1, n/2-1);
-                lowerRightInBounds = new Point(n/2-1, n/2-1);
-                lowerLeftInBounds = new Point(n/2-1, 1);
+                x_start = 1;
+                x_end   = n/2-1;
+                y_start = 1;
+                y_end   = n/2-1;
+                if(s%4 > 0) {
+                    scoutsInQuadrant++;
+                }
                 
-                pointsToReach.add(lowerRightInBounds);
-                pointsToReach.add(upperRightInBounds);
-                pointsToReach.add(lowerLeftInBounds);
-                pointsToReach.add(upperLeftInBounds);   
+                
                 
                 break;
             case 1:
+                // Upper right quadrant
+                // System.out.println("Upper right quadrant");
                 assignedOutpost = new Point(0,n+1);
                 upperLeft = new Point(0, n/2 + 1);
                 upperRight = new Point(0, n+1);
                 lowerRight = new Point(n/2, n+1);
                 lowerLeft = new Point(n/2, n/2 + 1);
                 
-                upperLeftInBounds = new Point(1, n/2 + 2);
-                upperRightInBounds = new Point(1, n);
-                lowerRightInBounds = new Point(n/2-1, n);
-                lowerLeftInBounds = new Point(n/2-1, n/2+2);
-                
-                pointsToReach.add(upperLeftInBounds);
-                pointsToReach.add(lowerRightInBounds);
-                pointsToReach.add(upperRightInBounds);
-                pointsToReach.add(lowerLeftInBounds);   
-                
+                x_start = 1;
+                x_end   = n/2-1;
+                y_start = n/2+1;
+                y_end   = n-1;
+                if(s%4 > 1) {
+                    scoutsInQuadrant++;
+                }
+                        
                 break;
             case 2:
+                // Lower right quadrant
+                // System.out.println("Lower right quadrant");
                 assignedOutpost = new Point(n+1,n+1);
                 upperLeft = new Point(n/2 + 1, n/2 + 1);
                 upperRight = new Point(n/2 + 1, n+1);
                 lowerRight = new Point(n+1, n+1);
-                lowerLeft = new Point(n+1, n/2 + 1);
+                lowerLeft = new Point(n+1, n/2 + 1);               
                 
-                upperLeftInBounds = new Point(n/2+2, n/2+2);
-                upperRightInBounds = new Point(n/2+2, n);
-                lowerRightInBounds = new Point(n, n);
-                lowerLeftInBounds = new Point(n, n/2+2);
-                
-                pointsToReach.add(lowerRightInBounds);
-                pointsToReach.add(upperRightInBounds);
-                pointsToReach.add(lowerLeftInBounds);
-                pointsToReach.add(upperLeftInBounds);                
-                
+                x_start = n/2+1;
+                x_end   = n;
+                y_start = n/2+1;
+                y_end   = n-1;
+                if(s%4 > 2) {
+                    scoutsInQuadrant++;
+                }
+                        
                 break;
             case 3:
+                // Lower left quadrant
+                // System.out.println("Lower left quadrant");
                 assignedOutpost = new Point(n+1,0);
                 upperLeft = new Point(n/2 + 1, 0);
                 upperRight = new Point(n/2 + 1, n/2);
                 lowerRight = new Point(n+1, n/2);
                 lowerLeft = new Point(n+1, 0);
                 
-                upperLeftInBounds = new Point(n/2+2, 1);
-                upperRightInBounds = new Point(n/2+2, n/2-1);
-                lowerRightInBounds = new Point(n, n/2-1);
-                lowerLeftInBounds = new Point(n, 1);
-                
-                pointsToReach.add(lowerRightInBounds);
-                pointsToReach.add(upperRightInBounds);
-                pointsToReach.add(lowerLeftInBounds);
-                pointsToReach.add(upperLeftInBounds);
+                x_start = n/2+1;
+                x_end   = n;
+                y_start = 1;
+                y_end   = n/2-1;
                 
                 break;
                 
@@ -163,12 +163,18 @@ public class Player extends scout.sim.Player {
                 pointsToReach.add(upperLeftInBounds);
                 */                
         }
+                
+        pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
+                
+        for(int i=this.id%4, j=0; i<s; i+= 4, j++){         
+            idInitMapping.put(i, j*(s/scoutsInQuadrant));
+        }        
         
-        Collections.shuffle(pointsToReach);
-        nextPointToReach = pointsToReach.get(0);
-        
-        //System.out.printf("Assigned outpost: Id: %d, ul: %d, ur: %d, lr: %d, ll: %d.",
-        //        this.id, upperLeft.x, upperRight.x, lowerRight.x, lowerLeft.x);
+        if(scoutsInQuadrant > 1 && this.id > 0) {           
+            idx = idInitMapping.get(this.id);   
+        }               
+        System.out.println("I am player " + this.id + ", my idx is " + idx);
+        nextPointToReach = pointsToReach.get(0);                
     }
 
     @Override
@@ -185,8 +191,6 @@ public class Player extends scout.sim.Player {
 
         dx = nextMove.x;
         dy = nextMove.y;
-
-        //System.out.printf("Id: %d, dx: %d, dy: %d.", this.id, dx, dy);
 
         return nextMove;
     }
@@ -234,6 +238,7 @@ public class Player extends scout.sim.Player {
             moveY = -1;
         }
 
+        /*
         if (isEnemyAtGivenPoint(moveX+1, moveY+1, nearbyIds)) {
             // If the player is moving diagonally.
             if (moveX != 0 && moveY != 0) {
@@ -261,6 +266,7 @@ public class Player extends scout.sim.Player {
                 }
             }
         }
+        */
 
         return new Point(moveX, moveY);
     }
@@ -360,6 +366,49 @@ public class Player extends scout.sim.Player {
             prevX = prevX - loc.dx;
             prevY = prevY - loc.dy;
         }
+    }
+    
+    
+    private ArrayList<Point> generate_points(int stride, int x_start, int x_end, int y_start, int y_end)
+    {
+        ArrayList<Point> first_half_points = new ArrayList<Point>();
+        ArrayList<Point> second_half_points = new ArrayList<Point>();
+        first_half_points.add(new Point(x_end, y_start));
+        //first_half_points.add(new Point(y_start, x_end));
+        second_half_points.add(new Point(x_start, y_end));
+        //second_half_points.add(new Point(y_end, x_start));
+        
+        for(int i=stride; i < (x_end-x_start); i+= stride)
+        {
+            Point point_a = new Point(x_end,       y_start + i);
+            //Point point_a = new Point(y_start + i, x_end);
+            Point point_b = new Point(x_end - i,   y_start    );
+            //Point point_b = new Point(y_start    , x_end - i);
+        
+            Point rev_point_a = new Point(x_start + i, y_end    );
+            //Point rev_point_a = new Point(y_end    , x_start + i);
+            Point rev_point_b = new Point(x_start,     y_end - i);
+            //Point rev_point_b = new Point(y_end - i, x_start);
+                
+            // Order in which points are added has to be alterned to maintain correct order.
+            if((i % (stride*2)) != 0)
+            {
+                first_half_points.add(point_a);
+                first_half_points.add(point_b);
+                second_half_points.add(0, rev_point_a);
+                second_half_points.add(0, rev_point_b);
+            }
+            else    {
+                first_half_points.add(point_b);
+                first_half_points.add(point_a);
+                second_half_points.add(0, rev_point_b);
+                second_half_points.add(0, rev_point_a);
+            }
+        }
+        
+        first_half_points.addAll(second_half_points);
+        return first_half_points;
+        
     }
 }
 
