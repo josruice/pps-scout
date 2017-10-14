@@ -89,7 +89,7 @@ class ExploringState extends State {
         allLocations.addAll(player.enemyLocations);
         System.out.println("in " + player.x + " " + player.y);
         // Find the unexplored diagonal square within your quadrant.
-        if (isMovePossible(player, new Point(x + player.dx, y + player.dy), allLocations)) {
+        // if (isMovePossible(player, new Point(x + player.dx, y + player.dy), allLocations)) {
             //move = new Point(player.dx, player.dy);
                         
             if(player.x == player.nextPointToReach.x && player.y == player.nextPointToReach.y)  {
@@ -106,7 +106,7 @@ class ExploringState extends State {
                 nextPointToReach = 
             }
             */
-        }
+        // }
         /*
         if (isMovePossible(player, new Point(x - 1, y - 1), allLocations)) {
             move = new Point(-1, -1);
@@ -120,7 +120,7 @@ class ExploringState extends State {
         else if (isMovePossible(player, new Point(x + 1, y + 1), allLocations)) {
             move = new Point(1, 1);
         }*/
-        else {
+        // else {
             // We don't have an unexplored diagonal. Choose a random diagonal.
             /*
             int[] indices = new int[] {-1, 1};
@@ -136,9 +136,9 @@ class ExploringState extends State {
 
                 move = new Point(indices[nx], indices[ny]);
             }*/
-            System.out.println("ELSE isMovePossible");
-            move = new Point(-player.dx, -player.dy);
-        }
+            // System.out.println("ELSE isMovePossible");
+            // move = new Point(-player.dx, -player.dy);
+        // }
 
         return move;
     }
