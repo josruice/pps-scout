@@ -84,8 +84,12 @@ class ExploringState extends State {
         Point move = null;
 
         List<Point> allLocations = new ArrayList<>(player.safeLocations);
-        allLocations.addAll(player.enemyLocations);        
-                        
+        allLocations.addAll(player.enemyLocations);
+        System.out.println("Id: " + player.id + "in " + player.x + " " + player.y);
+        // Find the unexplored diagonal square within your quadrant.
+        // if (isMovePossible(player, new Point(x + player.dx, y + player.dy), allLocations)) {
+            //move = new Point(player.dx, player.dy);
+
             if(player.x == player.nextPointToReach.x && player.y == player.nextPointToReach.y)  {
                             
                 //System.out.println("Point reached: x " + player.x + " y " + player.y);
