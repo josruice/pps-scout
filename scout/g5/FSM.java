@@ -85,19 +85,19 @@ class ExploringState extends State {
 
         List<Point> allLocations = new ArrayList<>(player.safeLocations);
         allLocations.addAll(player.enemyLocations);
-        System.out.println("Id: " + player.id + "in " + player.x + " " + player.y);
+
         // Find the unexplored diagonal square within your quadrant.
         // if (isMovePossible(player, new Point(x + player.dx, y + player.dy), allLocations)) {
             //move = new Point(player.dx, player.dy);
 
-            if(player.x == player.nextPointToReach.x && player.y == player.nextPointToReach.y)  {
+            if (player.x == player.nextPointToReach.x && player.y == player.nextPointToReach.y)  {
                             
                 //System.out.println("Point reached: x " + player.x + " y " + player.y);
                 int idx = (++player.idx) % (player.pointsToReach.size());
                 Point next = player.pointsToReach.get(idx);
                 //System.out.println("x:" + next.x + " y: " + next.y);
-                //System.out.println(player.idx + " -> " + idx + " size: " + player.pointsToReach.size() + " x:" + next.x + "y: " + next.y);
-                //System.out.println("0 x: " + player.pointsToReach.get(0).x + " 0 y: " + player.pointsToReach.get(0).y);
+                System.out.println(player.idx + " -> " + idx + " size: " + player.pointsToReach.size() + " x:" + next.x + " y: " + next.y);
+                System.out.println("x: " + player.pointsToReach.get(0).x + "y: " + player.pointsToReach.get(0).y);
                 player.nextPointToReach.x = next.x;
                 player.nextPointToReach.y = next.y;                                                                                                    
             }            

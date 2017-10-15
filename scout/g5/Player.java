@@ -50,6 +50,7 @@ public class Player extends scout.sim.Player {
     int idx = 0;    
     int stride = 5; 
     int x_start, x_end, y_start, y_end = -1;
+    HashMap<Integer, Boolean> scoutsInQuadrant = new HashMap<Integer, Boolean>();
     HashMap<Integer, Integer> idInitMapping = new HashMap<Integer, Integer>(); 
     
     public Player(int id) {
@@ -65,10 +66,11 @@ public class Player extends scout.sim.Player {
         this.totalTurns = t;
         this.remainingTurns = t;
         this.n = n;
-        int scoutsInQuadrant = s/4;
+        int scoutsPerQuadrant = s/4;
         
         this.fsm = new PlayerFSM();
  
+        
         
         // Set coordinate boundaries and assigned outpost.
         switch(this.id % 4) {
@@ -86,7 +88,7 @@ public class Player extends scout.sim.Player {
                 y_start = 1;
                 y_end   = n/2-1;
                 if(s%4 > 0) {
-                    scoutsInQuadrant++;
+                    scoutsPerQuadrant++;
                 }
                 
                 
@@ -106,7 +108,7 @@ public class Player extends scout.sim.Player {
                 y_start = n/2+1;
                 y_end   = n-1;
                 if(s%4 > 1) {
-                    scoutsInQuadrant++;
+                    scoutsPerQuadrant++;
                 }
                         
                 break;
@@ -124,7 +126,7 @@ public class Player extends scout.sim.Player {
                 y_start = n/2+1;
                 y_end   = n-1;
                 if(s%4 > 2) {
-                    scoutsInQuadrant++;
+                    scoutsPerQuadrant++;
                 }
                         
                 break;
@@ -165,15 +167,28 @@ public class Player extends scout.sim.Player {
         }
                 
         pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
-                
-        for(int i=this.id%4, j=0; i<s; i+= 4, j++){         
-            idInitMapping.put(i, j*(s/scoutsInQuadrant));
+        boolean reverseList = false;
+                        
+        int i= this.id%4;        
+        while(4 <= this.id  && i < this.id) {
+            reverseList = ! reverseList;
+            i+= 4;
+        }
+        
+        if(this.id >= (this.id%4+2*4))  {
+            idx = (this.id/4-1)*(s/scoutsPerQuadrant);
         }        
         
-        if(scoutsInQuadrant > 1 && this.id > 0) {           
-            idx = idInitMapping.get(this.id);   
-        }               
-        System.out.println("I am player " + this.id + ", my idx is " + idx);
+        if(reverseList == true) {
+            System.out.println("ID: " + this.id + " reversing list");
+            Collections.reverse(pointsToReach);
+        }
+        
+        for(Point p: pointsToReach) {
+            System.out.println("ID: "  + this.id + "  x: " + p.x + " y: " + p.y);
+        }
+        System.out.println("ID: " + this.id + " init point " + idx + "\n\nS");
+
         nextPointToReach = pointsToReach.get(0);                
     }
 
