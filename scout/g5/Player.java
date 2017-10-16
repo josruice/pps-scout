@@ -62,6 +62,15 @@ public class Player extends scout.sim.Player {
     public void init(String id, int s, int n, int t, List<Point> landmarkLocations) {
         enemyLocations = new ArrayList<>();
         safeLocations = new ArrayList<>();
+
+        // We know that the limits are safe, so add that to the safe locations.
+        for (int i = 0; i < n+2; ++i) {
+            safeLocations.add(new Point(0,i));
+            safeLocations.add(new Point(i,0));
+            safeLocations.add(new Point(n+1,i));
+            safeLocations.add(new Point(i,n+1));
+        }
+
         unknownLocations = new ArrayList<>();
         this.totalTurns = t;
         this.remainingTurns = t;
