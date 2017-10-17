@@ -104,15 +104,16 @@ public class Player extends scout.sim.Player {
                 lowerLeft = new Point(n, 0);
                 
                 x_start = 1;
-                x_end   = n-1;
+                x_end   = n;
                 y_start = 1;
-                y_end   = n-1;
+                y_end   = n;
 
                 scoutsPerQuadrant = s; 
 
                 if(this.id == 1)    {
                     reverseList = true;
                 }
+                pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
 
                 if(this.id == 2)  {
                     idx = pointsToReach.size() / 2;
@@ -133,9 +134,9 @@ public class Player extends scout.sim.Player {
                     lowerLeft = new Point(n/2, 0);
                     
                     x_start = 1;
-                    x_end   = n/2-1;
+                    x_end   = n/2;
                     y_start = 1;
-                    y_end   = n/2-1;
+                    y_end   = n/2;
                     if(s%4 > 0) {
                         scoutsPerQuadrant++;
                     }
@@ -149,9 +150,9 @@ public class Player extends scout.sim.Player {
                     lowerLeft = new Point(n/2, n/2 + 1);
                     
                     x_start = 1;
-                    x_end   = n/2-1;
+                    x_end   = n/2;
                     y_start = n/2+1;
-                    y_end   = n-1;
+                    y_end   = n;
                     if(s%4 > 1) {
                         scoutsPerQuadrant++;
                     }
@@ -167,7 +168,7 @@ public class Player extends scout.sim.Player {
                     x_start = n/2+1;
                     x_end   = n;
                     y_start = n/2+1;
-                    y_end   = n-1;
+                    y_end   = n;
                     if(s%4 > 2) {
                         scoutsPerQuadrant++;
                     }
@@ -183,7 +184,7 @@ public class Player extends scout.sim.Player {
                     x_start = n/2+1;
                     x_end   = n;
                     y_start = 1;
-                    y_end   = n/2-1;
+                    y_end   = n/2;
                     
                     break;                    
             }
@@ -193,18 +194,28 @@ public class Player extends scout.sim.Player {
                 reverseList = ! reverseList;
                 i+= 4;
             }
+            pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
             
+
             if(this.id >= (this.id%4+2*4))  {
-                idx = (this.id/4-1)*(s/scoutsPerQuadrant);
+                if(reverseList == false)    {
+                    idx = (this.id/4)*(pointsToReach.size()/(scoutsPerQuadrant));    
+                }
+                else {
+                    idx = (this.id/4-1)*(pointsToReach.size()/(scoutsPerQuadrant));    
+                }
+                
             }        
             
             
         }
         
-        pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
+        
         if(reverseList == true) {
             Collections.reverse(pointsToReach);
         }
+
+        System.out.println("I'm " + this.id + " and my idx is " + idx + " and reversed is " +  reverseList);
 
         nextPointToReach = pointsToReach.get(idx);                
     }
@@ -416,21 +427,15 @@ public class Player extends scout.sim.Player {
         ArrayList<Point> first_half_points = new ArrayList<Point>();
         ArrayList<Point> second_half_points = new ArrayList<Point>();
         first_half_points.add(new Point(x_end, y_start));
-        //first_half_points.add(new Point(y_start, x_end));
         second_half_points.add(new Point(x_start, y_end));
-        //second_half_points.add(new Point(y_end, x_start));
         
         for(int i=stride; i < (x_end-x_start); i+= stride)
         {
             Point point_a = new Point(x_end,       y_start + i);
-            //Point point_a = new Point(y_start + i, x_end);
             Point point_b = new Point(x_end - i,   y_start    );
-            //Point point_b = new Point(y_start    , x_end - i);
         
             Point rev_point_a = new Point(x_start + i, y_end    );
-            //Point rev_point_a = new Point(y_end    , x_start + i);
             Point rev_point_b = new Point(x_start,     y_end - i);
-            //Point rev_point_b = new Point(y_end - i, x_start);
                 
             // Order in which points are added has to be alterned to maintain correct order.
             if((i % (stride*2)) != 0)
@@ -448,9 +453,17 @@ public class Player extends scout.sim.Player {
             }
         }
         
-        first_half_points.addAll(second_half_points);
-        return first_half_points;
+
+        if(first_half_points.get(first_half_points.size()-1).x == x_end)   {
+            second_half_points.add(0, new Point(x_start, y_start));
+            second_half_points.add(0, new Point(x_end, y_end));
+        } else  {
+            second_half_points.add(0, new Point(x_end, y_end));
+            second_half_points.add(0, new Point(x_start, y_start));            
+        }
         
+        first_half_points.addAll(second_half_points);
+        return first_half_points;        
     }
 }
 
