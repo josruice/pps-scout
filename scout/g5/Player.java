@@ -13,6 +13,8 @@ public class Player extends scout.sim.Player {
     int totalTurns;
     int remainingTurns;
     int n; // Size of the board.
+    int numScouts;
+    int turnsToNextReporting;
 
     // Denote the current x, y position.
     int x = -1;
@@ -75,6 +77,8 @@ public class Player extends scout.sim.Player {
         this.totalTurns = t;
         this.remainingTurns = t;
         this.n = n;
+        this.numScouts = s;
+        this.turnsToNextReporting = 0;
         int scoutsPerQuadrant = 0;
         boolean reverseList = false;
 
@@ -96,47 +100,40 @@ public class Player extends scout.sim.Player {
             }
 
 
+        // Borders lack of interest, so move from 1 to n, instead from 0 to n+1.
         if(s < 4)   {
+            upperLeft = new Point(1,1);
+            upperRight = new Point(1, n);
+            lowerRight = new Point(n, n);
+            lowerLeft = new Point(n, 1);
 
-                upperLeft = new Point(0,0);
-                upperRight = new Point(0, n);
-                lowerRight = new Point(n, n);
-                lowerLeft = new Point(n, 0);
-                
-                x_start = 1;
-                x_end   = n;
-                y_start = 1;
-                y_end   = n;
+            x_start = 1;
+            x_end   = n;
+            y_start = 1;
+            y_end   = n;
 
-                scoutsPerQuadrant = s; 
+            scoutsPerQuadrant = s;
 
-                if(this.id == 1)    {
-                    reverseList = true;
-                }
-                pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
+            if(this.id == 1)    {
+                reverseList = true;
+            }
+            pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
 
-                if(this.id == 2)  {
-                    idx = pointsToReach.size() / 2;
-                }        
-
-        }
-        else    {
-
+            if(this.id == 2)  {
+                idx = pointsToReach.size() / 2;
+            }
+        } else {
             scoutsPerQuadrant = s/4;
 
             // Set coordinate boundaries and assigned outpost.
             switch(this.id % 4) {
                 case 0:
                     // Upper left quadrant
-                    upperLeft = new Point(0,0);
-                    upperRight = new Point(0, n/2);
+                    upperLeft = new Point(1,1);
+                    upperRight = new Point(1, n/2);
                     lowerRight = new Point(n/2, n/2);
-                    lowerLeft = new Point(n/2, 0);
+                    lowerLeft = new Point(n/2, 1);
                     
-                    x_start = 1;
-                    x_end   = n/2;
-                    y_start = 1;
-                    y_end   = n/2;
                     if(s%4 > 0) {
                         scoutsPerQuadrant++;
                     }
@@ -144,15 +141,11 @@ public class Player extends scout.sim.Player {
                     break;
                 case 1:
                     // Upper right quadrant
-                    upperLeft = new Point(0, n/2 + 1);
-                    upperRight = new Point(0, n+1);
-                    lowerRight = new Point(n/2, n+1);
-                    lowerLeft = new Point(n/2, n/2 + 1);
-                    
-                    x_start = 1;
-                    x_end   = n/2;
-                    y_start = n/2+1;
-                    y_end   = n;
+                    upperLeft = new Point(1, n/2+1);
+                    upperRight = new Point(1, n);
+                    lowerRight = new Point(n/2, n);
+                    lowerLeft = new Point(n/2+1, n/2+1);
+
                     if(s%4 > 1) {
                         scoutsPerQuadrant++;
                     }
@@ -160,34 +153,29 @@ public class Player extends scout.sim.Player {
                     break;
                 case 2:
                     // Lower right quadrant
-                    upperLeft = new Point(n/2 + 1, n/2 + 1);
-                    upperRight = new Point(n/2 + 1, n+1);
-                    lowerRight = new Point(n+1, n+1);
-                    lowerLeft = new Point(n+1, n/2 + 1);               
-                    
-                    x_start = n/2+1;
-                    x_end   = n;
-                    y_start = n/2+1;
-                    y_end   = n;
+                    upperLeft = new Point(n/2+1, n/2+1);
+                    upperRight = new Point(n/2+1, n);
+                    lowerRight = new Point(n, n);
+                    lowerLeft = new Point(n, n/2+1);
+
                     if(s%4 > 2) {
                         scoutsPerQuadrant++;
                     }
-                            
                     break;
                 case 3:
                     // Lower left quadrant
-                    upperLeft = new Point(n/2 + 1, 0);
+                    upperLeft = new Point(n/2 + 1, 1);
                     upperRight = new Point(n/2 + 1, n/2);
-                    lowerRight = new Point(n+1, n/2);
-                    lowerLeft = new Point(n+1, 0);
-                    
-                    x_start = n/2+1;
-                    x_end   = n;
-                    y_start = 1;
-                    y_end   = n/2;
-                    
+                    lowerRight = new Point(n, n/2);
+                    lowerLeft = new Point(n, 1);
                     break;                    
             }
+
+            x_start = upperLeft.x;
+            y_start = upperLeft.y;
+            x_end   = lowerRight.x;
+            y_end   = lowerRight.y;
+
 
             int i= this.id%4;        
             while(4 <= this.id  && i < this.id) {
@@ -241,6 +229,7 @@ public class Player extends scout.sim.Player {
     // Communicate with other players.
     @Override
     public void communicate(ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
+        if (turnsToNextReporting > 0) --turnsToNextReporting;
         --remainingTurns;
 
         for (CellObject obj : concurrentObjects) {

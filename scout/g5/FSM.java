@@ -126,7 +126,7 @@ class GoingToCommunicateState extends State {
     }
 }
 
-// Go to outpost.
+// Go to the outpost assigned to you.
 class GoingBackToOutpostState extends State {
     public Point move(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
                       List<CellObject> concurrentObjects) {
@@ -147,6 +147,16 @@ class GoingBackToOutpostState extends State {
 
             return new Point(dx, dy);
         }
+    }
+}
+
+class MovingToNearbyOutpostState extends State {
+    public Point move(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
+                      List<CellObject> concurrentObjects) {
+        int n = player.n;
+        int outpostX = (player.x < n/2)? 0 : n+1;
+        int outpostY = (player.y < n/2)? 0 : n+1;
+        return player.goToPosition(outpostX, outpostY, nearbyIds);
     }
 }
 
@@ -315,6 +325,25 @@ class QuadrantReachedEvent extends Event {
     }
 };
 
+
+// Player is nearby an outpost.
+class CloseToOutpostEvent extends Event {
+    public int getPriority() { return 10; }
+
+    @Override
+    public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
+        boolean enoughPlayersToReport = player.numScouts > 3;
+        // If there are enough players to get to the outposts by the end of the game, ignore intermediate reporting.
+        if (enoughPlayersToReport || player.turnsToNextReporting > 0) {
+            return false;
+        }
+
+        int n = player.n;
+        int range = Math.max(3, n / 20);
+        return ((player.x < range || player.x > (n+1)-range) && (player.y < range || player.y > (n+1)-range));
+    }
+};
+
 // The players need to go to communicate.
 class CommunicateEvent extends Event {
     public int getPriority() { return 100; }
@@ -322,6 +351,9 @@ class CommunicateEvent extends Event {
     @Override
     public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
                                List<CellObject> concurrentObjects) {
+        // Special case where there is only one scout. No communication required in this case.
+        if (player.numScouts == 1) return false;
+
         int middleP = (int) player.n/2;
 
         int xDistanceToMiddle = Math.abs(middleP - player.x);
@@ -337,9 +369,9 @@ class CommunicateEvent extends Event {
         int timeToOutpost = diagonalDistance*3 + orthogonalDistanceReminder*2;
 
         int extraTimeToOutpost = (int) (timeToOutpost*0.5);
-        int endOfMissionTime = timeToOutpost + extraTimeToOutpost;
+        int communicationTime = timeToOutpost + extraTimeToOutpost;
 
-        return player.remainingTurns < endOfMissionTime;
+        return player.remainingTurns < communicationTime;
     }
 };
 
@@ -380,6 +412,8 @@ class OutpostReachedEvent extends Event {
     @Override
     public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
                                List<CellObject> concurrentObjects) {
+        int outpostRange = Math.max(3, player.n / 20);
+        player.turnsToNextReporting = outpostRange * 2 * 3; // Twice the outpost range by diagonal movement time.
         for(CellObject obj : concurrentObjects) {
             if (obj instanceof Outpost) {
                 // The game is ending and the player has reached the outpost without knowing
@@ -414,20 +448,23 @@ class PlayerFSM {
     private State goingBackToOutpostState = new GoingBackToOutpostState();
     private State doneState = new DoneState();
     private State movingToQuadrant = new MovingTowardsCenterState();
+    private State movingToNearbyOutpostState = new MovingToNearbyOutpostState();
     private State goingToCommunicate = new GoingToCommunicateState();
 
+
     private State[] states = {orientingState, goingToLandmarkState, exploringState, goingBackToOutpostState,
-            doneState};
+            movingToNearbyOutpostState, doneState};
 
     private Event landmarkSightedEvent = new LandmarkSightedEvent();
     private Event orientedEvent = new OrientedEvent();
     private Event endOfMissionEvent = new EndOfMissionEvent();
     private Event outpostReachedEvent = new OutpostReachedEvent();
     private Event quadrantReachedEvent = new QuadrantReachedEvent();
+    private Event closeToOutpostEvent = new CloseToOutpostEvent();
     private Event goToCommunicateEvent = new CommunicateEvent();
 
     private Event[] events = {landmarkSightedEvent, orientedEvent, endOfMissionEvent,
-            outpostReachedEvent, quadrantReachedEvent, goToCommunicateEvent};
+            outpostReachedEvent, quadrantReachedEvent, closeToOutpostEvent, goToCommunicateEvent};
 
     //
     // This represents the transitions table of the FSM. It use a State class and an Event class, and
@@ -473,8 +510,15 @@ class PlayerFSM {
         Map<Class<? extends Event>, State> exploringTransitions;
         exploringTransitions = new HashMap<Class<? extends Event>, State>();
         exploringTransitions.put(CommunicateEvent.class, goingToCommunicate);
+        exploringTransitions.put(CloseToOutpostEvent.class, movingToNearbyOutpostState);
         exploringTransitions.put(EndOfMissionEvent.class, goingBackToOutpostState);
         transitions.put(ExploringState.class, exploringTransitions);
+
+        Map<Class<? extends Event>, State> movingToNearbyOutpostTransitions;
+        movingToNearbyOutpostTransitions = new HashMap<Class<? extends Event>, State>();
+        movingToNearbyOutpostTransitions.put(OutpostReachedEvent.class, exploringState);
+        movingToNearbyOutpostTransitions.put(EndOfMissionEvent.class, goingBackToOutpostState);
+        transitions.put(MovingToNearbyOutpostState.class, movingToNearbyOutpostTransitions);
 
         Map<Class<? extends Event>, State> communicatingTransitions;
         communicatingTransitions = new HashMap<Class<? extends Event>, State>();
