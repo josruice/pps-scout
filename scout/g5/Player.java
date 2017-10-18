@@ -53,15 +53,19 @@ public class Player extends scout.sim.Player {
     String yEdgeFound = null;
     int distanceFromEdge = -1;
 
-    // Variables for exploring
+    // Next to point to be reached in the exploration phase
     Point nextPointToReach = null;
-    ArrayList<Point> pointsToReach = new ArrayList<Point>();       
+    // List to points to be follow in the exploration phase
+    ArrayList<Point> pointsToReach = new ArrayList<Point>();
+    // Index of the point in the list of points       
     int idx = 0;    
+    // X and Y space between points to create the list of points to reach
     int stride = 5; 
+    // Border points of the quadrant
     int x_start, x_end, y_start, y_end = -1;
-    HashMap<Integer, Boolean> scoutsInQuadrant = new HashMap<Integer, Boolean>();
-    HashMap<Integer, Integer> idInitMapping = new HashMap<Integer, Integer>(); 
-    
+    // Whether to avoid enemies or not
+    boolean avoidEnemies = true;
+
     public Player(int id) {
         super(id);
         this.id = id;
@@ -86,11 +90,15 @@ public class Player extends scout.sim.Player {
         this.n = n;
         this.numScouts = s;
         this.turnsToNextReporting = 0;
+        // Count of the number of scouts in the player's quadrant
         int scoutsPerQuadrant = 0;
+        // Flat to determine if the list of points in the exploration phase
+        // should be traversed in reverse order
         boolean reverseList = false;
 
         this.fsm = new PlayerFSM();
 
+        // Choose destination outpost depeding on id
         switch(this.id % 4) {
             case 0:
                 assignedOutpost = new Point(0,0);
@@ -106,7 +114,6 @@ public class Player extends scout.sim.Player {
                 break;
             }
 
-
         // Borders lack of interest, so move from 1 to n, instead from 0 to n+1.
         if(s < 4)   {
             upperLeft = new Point(1,1);
@@ -121,15 +128,20 @@ public class Player extends scout.sim.Player {
 
             scoutsPerQuadrant = s;
 
+            // If we have less than 4 players, player with id 1 will traverse 
+            // the list of points in reverse order
             if(this.id == 1)    {
                 reverseList = true;
             }
             pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
 
+            // If we have less than 4 players, player with id 2 will start 
+            // traversing the list of points from the middle 
             if(this.id == 2)  {
                 idx = pointsToReach.size() / 2;
             }
         } else {
+
             scoutsPerQuadrant = s/4;
 
             // Set coordinate boundaries and assigned outpost.
@@ -141,6 +153,9 @@ public class Player extends scout.sim.Player {
                     lowerRight = new Point(n/2, n/2);
                     lowerLeft = new Point(n/2, 1);
                     
+                    // If mod of the number of scouts and the number of quadrants
+                    // is greater than 0, the number of scouts in quadrant
+                    // is incremented by 1
                     if(s%4 > 0) {
                         scoutsPerQuadrant++;
                     }
@@ -153,6 +168,9 @@ public class Player extends scout.sim.Player {
                     lowerRight = new Point(n/2, n);
                     lowerLeft = new Point(n/2+1, n/2+1);
 
+                    // If mod of the number of scouts and the number of quadrants
+                    // is greater than 1, the number of scouts in quadrant
+                    // is incremented by 1
                     if(s%4 > 1) {
                         scoutsPerQuadrant++;
                     }
@@ -165,6 +183,9 @@ public class Player extends scout.sim.Player {
                     lowerRight = new Point(n, n);
                     lowerLeft = new Point(n, n/2+1);
 
+                    // If mod of the number of scouts and the number of quadrants
+                    // is greater than 2, the number of scouts in quadrant
+                    // is incremented by 1
                     if(s%4 > 2) {
                         scoutsPerQuadrant++;
                     }
@@ -184,6 +205,12 @@ public class Player extends scout.sim.Player {
             y_end   = lowerRight.y;
 
 
+            // To determine if our position within the list of scouts in the
+            // quadrant is even or odd, a variable is incremented starting
+            // at the first id of the quadrant until our id id is reached. 
+            // A boolean flag is flipped in every increment. 
+            // This operation is only done if we are not the first scout in 
+            // the quadrant.
             int i= this.id%4;        
             while(4 <= this.id  && i < this.id) {
                 reverseList = ! reverseList;
@@ -191,7 +218,10 @@ public class Player extends scout.sim.Player {
             }
             pointsToReach = generate_points(stride, x_start, x_end, y_start, y_end);
             
-
+            // If our id is the third or more id within the quadrant, our 
+            // initial index will be increment depending on the  number of 
+            // points and the number of scouts.
+            // 
             if(this.id >= (this.id%4+2*4))  {
                 if(reverseList == false)    {
                     idx = (this.id/4)*(pointsToReach.size()/(scoutsPerQuadrant));    
@@ -199,15 +229,14 @@ public class Player extends scout.sim.Player {
                 else {
                     idx = (this.id/4-1)*(pointsToReach.size()/(scoutsPerQuadrant));    
                 }
+                avoidEnemies = false;
             }
         }
         
-        
+        // Reverse list of points 
         if(reverseList == true) {
             Collections.reverse(pointsToReach);
         }
-
-        // System.out.println("I'm " + this.id + " and my idx is " + idx + " and reversed is " +  reverseList);
 
         nextPointToReach = pointsToReach.get(idx);                
     }
@@ -283,8 +312,8 @@ public class Player extends scout.sim.Player {
 
         // System.out.printf("To go: %d, moveX: %d, moveY: %d", this.id, xFinal, yFinal);
         // System.out.printf("Before Id: %d, moveX: %d, moveY: %d", this.id, moveX, moveY);
-
-        if (isEnemyAtGivenPoint(moveX+1, moveY+1, nearbyIds)) {
+ 
+        if (avoidEnemies == true && isEnemyAtGivenPoint(moveX+1, moveY+1, nearbyIds)) {
             // If the player is moving diagonally.
             if (moveX != 0 && moveY != 0) {
                 if (!isEnemyAtGivenPoint(moveX+1, 1, nearbyIds)) {
@@ -311,8 +340,6 @@ public class Player extends scout.sim.Player {
                 }
             }
         }
-
-        // System.out.printf("After Id: %d, moveX: %d, moveY: %d", this.id, moveX, moveY);
 
         return new Point(moveX, moveY);
     }
@@ -406,9 +433,7 @@ public class Player extends scout.sim.Player {
         int prevY = y - dy;
         for (int i = unknownLocations.size() - 1; i > 0; --i) {
             Location loc = unknownLocations.get(i);
-            //System.out.println("Id: " + id + " pos: " + prevX + " " + prevY);
             for (Point p : loc.enemyLocations) {
-                //System.out.println("Id: " + id + " Enemy pos: " + (prevX + p.x) + " " + (prevY + p.y));
                 Point enemy = new Point(prevX + p.x, prevY + p.y);
                 if (!enemyLocations.contains(enemy)) {
                     enemyLocations.add(enemy);
@@ -448,14 +473,18 @@ public class Player extends scout.sim.Player {
             {
                 first_half_points.add(point_a);
                 first_half_points.add(point_b);
-                second_half_points.add(0, rev_point_a);
                 second_half_points.add(0, rev_point_b);
+                second_half_points.add(0, rev_point_a);
+                
+                System.out.println("If ");
             }
             else    {
                 first_half_points.add(point_b);
                 first_half_points.add(point_a);
-                second_half_points.add(0, rev_point_b);
+                
                 second_half_points.add(0, rev_point_a);
+                second_half_points.add(0, rev_point_b);
+                System.out.println("Else ");
             }
         }
         

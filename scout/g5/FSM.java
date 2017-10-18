@@ -26,7 +26,6 @@ class OrientingState extends State {
         if (player.distanceFromEdge == -1) {
             dx = (player.assignedOutpost.x == 0)? -1 : 1;
             dy = (player.assignedOutpost.y == 0)? -1 : 1;
-            //System.out.printf("Orienting: id: %d, dx: %d, dy: %d.", player.id, dx, dy);
         }
         else {
             if (player.xEdgeFound != null) {
@@ -36,8 +35,6 @@ class OrientingState extends State {
             else {
                 dx = (player.assignedOutpost.x == 0)? -1 : 1;
                 dy = (player.assignedOutpost.y == 0)? 1 : -1;
-                //System.out.printf("yEdgeFound: id: %d, dx: %d, dy: %d.", player.id, dx, dy);
-
             }
 
             player.distanceFromEdge += 1;
@@ -74,7 +71,7 @@ class ExploringState extends State {
 
     public Point move(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
                       List<CellObject> concurrentObjects) {
-        //System.out.printf("Id: %d, My position is: %d, %d\n", player.id, player.x, player.y);
+
         rand = new Random(player.id);
         return getDiagonalMove(player, nearbyIds);
     }
@@ -86,6 +83,9 @@ class ExploringState extends State {
         List<Point> allLocations = new ArrayList<>(player.safeLocations);
         allLocations.addAll(player.enemyLocations);
 
+        // If we have reached the destination point, the next point from 
+        // the precomputed list is retrieved and set as the next point
+        // to be reached
         if (player.x == player.nextPointToReach.x && player.y == player.nextPointToReach.y)  {                        
             player.idx++;
             int idx = player.idx % player.pointsToReach.size();
@@ -93,6 +93,8 @@ class ExploringState extends State {
             player.nextPointToReach = next;
         }            
 
+        // Get the next point where the player should move in order to get
+        // closer to the destination point
         move = player.goToPosition(player.nextPointToReach.x, player.nextPointToReach.y,
                     nearbyIds);
 
@@ -139,6 +141,8 @@ class GoingBackToOutpostState extends State {
                       List<CellObject> concurrentObjects) {
         int dx, dy;
         boolean oriented = player.x != -1;
+        // If the scout is oriented, it can determine the goal point 
+        // Otherwise, it will get closer to the assigned corner of the board
         if (oriented) {
             return player.goToPosition(player.assignedOutpost.x, player.assignedOutpost.y, nearbyIds);
         } else {
@@ -229,6 +233,7 @@ class OrientedEvent extends Event {
                                List<CellObject> concurrentObjects) {
         if (player.x != -1) return true;
 
+        // If we find a landmark or an outpost, we can orient ourselves. 
         for(CellObject obj : concurrentObjects) {
             if (obj instanceof Landmark) {
                 player.x = ((Landmark) obj).getLocation().x;
@@ -242,7 +247,7 @@ class OrientedEvent extends Event {
             }
         }
 
-        // Record the location of edges. TODO: refactor to a function.
+        // Record the location of edges. 
         if (nearbyIds.get(0).get(0) == null) {
             if (nearbyIds.get(0).get(2) == null) {
                 player.xEdgeFound = "top";
@@ -321,7 +326,7 @@ class QuadrantReachedEvent extends Event {
 
     @Override
     public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds, List<CellObject> concurrentObjects) {
-        //System.out.printf("Id: %d, My quadrant position is: %d, %d\n", player.id, player.x, player.y);
+
         return player.x != -1 && isWithinQuadrant(player);
     }
 
