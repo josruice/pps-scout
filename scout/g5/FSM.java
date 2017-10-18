@@ -122,6 +122,13 @@ class MovingTowardsCenterState extends State {
 class GoingToCommunicateState extends State {
     public Point move(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
                       List<CellObject> concurrentObjects) {
+        // Check if the player is already in the center.
+        if (player.x == player.n/2 && player.y == player.n/2) {
+            if (player.isLowerPlayerPresent(concurrentObjects)) {
+                player.moveToOutpost = true;
+            }
+        }
+
         return player.goToPosition((int) player.n/2, (int) player.n/2, nearbyIds);
     }
 }
@@ -226,7 +233,6 @@ class OrientedEvent extends Event {
             if (obj instanceof Landmark) {
                 player.x = ((Landmark) obj).getLocation().x;
                 player.y = ((Landmark) obj).getLocation().y;
-                //System.out.printf("Landmark Id: %d, x: %d, y: %d.", player.id, player.x, player.y);
                 return true;
             }
             if (obj instanceof Outpost) {
@@ -368,7 +374,7 @@ class CommunicateEvent extends Event {
                 Math.max(xDistanceToMiddle, yDistanceToMiddle) - diagonalDistance;
         int timeToOutpost = diagonalDistance*3 + orthogonalDistanceReminder*2;
 
-        int extraTimeToOutpost = (int) (timeToOutpost*0.5);
+        int extraTimeToOutpost = (int) (timeToOutpost*player.buffTime);
         int communicationTime = timeToOutpost + extraTimeToOutpost;
 
         return player.remainingTurns < communicationTime;
@@ -384,6 +390,9 @@ class EndOfMissionEvent extends Event {
     @Override
     public boolean isHappening(Player player, ArrayList<ArrayList<ArrayList<String>>> nearbyIds,
                                List<CellObject> concurrentObjects) {
+        if (player.moveToOutpost)
+            return true;
+
         int timeToOutpost, xDistanceToOutpost, yDistanceToOutpost;
         int diagonalDistance, orthogonalDistanceReminder;
 
@@ -400,7 +409,7 @@ class EndOfMissionEvent extends Event {
             timeToOutpost = player.n * 2;
         }
 
-        int extraTimeToOutpost = (int) (timeToOutpost*0.5);
+        int extraTimeToOutpost = (int) (timeToOutpost*(player.buffTime));
         int endOfMissionTime = timeToOutpost + extraTimeToOutpost;
         return player.remainingTurns < endOfMissionTime;
     }

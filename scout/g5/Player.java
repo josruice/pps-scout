@@ -20,6 +20,13 @@ public class Player extends scout.sim.Player {
     int x = -1;
     int y = -1;
 
+    // Buffer time added in case of enemies when moving to the center
+    // or the outpost.
+    double buffTime = 0.4;
+
+    // Flag to indicate if the player should move to the outpost.
+    boolean moveToOutpost = false;
+
     // Denote the direction traversed by the players.
     int dx;
     int dy;
@@ -192,10 +199,7 @@ public class Player extends scout.sim.Player {
                 else {
                     idx = (this.id/4-1)*(pointsToReach.size()/(scoutsPerQuadrant));    
                 }
-                
-            }        
-            
-            
+            }
         }
         
         
@@ -203,7 +207,7 @@ public class Player extends scout.sim.Player {
             Collections.reverse(pointsToReach);
         }
 
-        System.out.println("I'm " + this.id + " and my idx is " + idx + " and reversed is " +  reverseList);
+        // System.out.println("I'm " + this.id + " and my idx is " + idx + " and reversed is " +  reverseList);
 
         nextPointToReach = pointsToReach.get(idx);                
     }
@@ -311,6 +315,19 @@ public class Player extends scout.sim.Player {
         // System.out.printf("After Id: %d, moveX: %d, moveY: %d", this.id, moveX, moveY);
 
         return new Point(moveX, moveY);
+    }
+
+    public boolean isLowerPlayerPresent(List<CellObject> concurrentObjects) {
+        for (CellObject obj : concurrentObjects) {
+            if (obj instanceof Player) {
+                int otherId = ((Player) obj).id;
+                if (otherId < this.id && otherId % 4 == this.id % 4) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     // Return true if there is an enemy at pointX, pointY.
