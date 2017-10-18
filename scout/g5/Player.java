@@ -59,7 +59,7 @@ public class Player extends scout.sim.Player {
     ArrayList<Point> pointsToReach = new ArrayList<Point>();
     // Index of the point in the list of points       
     int idx = 0;    
-    // X and Y space between points to create the list of points to reach
+    // X and Y space between points to create the list of points to reach    
     int stride = 5; 
     // Border points of the quadrant
     int x_start, x_end, y_start, y_end = -1;
@@ -98,6 +98,14 @@ public class Player extends scout.sim.Player {
 
         this.fsm = new PlayerFSM();
 
+        // If the number of turns is not enough to visit the whole board, 
+        // an sparse search is preferred
+        if(totalTurns*0.1 > n*1.2) {
+            stride = 4;
+        }
+
+        // stride = 5;
+        System.out.println("The stride is " + stride);
         // Choose destination outpost depeding on id
         switch(this.id % 4) {
             case 0:
@@ -309,9 +317,6 @@ public class Player extends scout.sim.Player {
         if (this.x + moveX == xFinal && this.y + moveY == yFinal) {
             return new Point(moveX, moveY);
         }
-
-        // System.out.printf("To go: %d, moveX: %d, moveY: %d", this.id, xFinal, yFinal);
-        // System.out.printf("Before Id: %d, moveX: %d, moveY: %d", this.id, moveX, moveY);
  
         if (avoidEnemies == true && isEnemyAtGivenPoint(moveX+1, moveY+1, nearbyIds)) {
             // If the player is moving diagonally.
@@ -475,8 +480,6 @@ public class Player extends scout.sim.Player {
                 first_half_points.add(point_b);
                 second_half_points.add(0, rev_point_b);
                 second_half_points.add(0, rev_point_a);
-                
-                System.out.println("If ");
             }
             else    {
                 first_half_points.add(point_b);
@@ -484,7 +487,6 @@ public class Player extends scout.sim.Player {
                 
                 second_half_points.add(0, rev_point_a);
                 second_half_points.add(0, rev_point_b);
-                System.out.println("Else ");
             }
         }
         
